@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Source - https://stackoverflow.com/a/79210232
+# Posted by fxnn
+# Retrieved 2026-02-27, License - CC BY-SA 4.0
+
+for namespaceWithType in $(/usr/local/bin/kubectl get ns -o name); do
+    namespace="${namespaceWithType#*/}" # remove `namespace/` prefix
+    if /usr/local/bin/kubectl get -n "${namespace}" pods -o name >/dev/null 2>/dev/null; then
+        echo "${namespace}"
+    fi
+done
