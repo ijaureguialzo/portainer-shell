@@ -26,13 +26,13 @@ build:
     --no-cache \
     --platform linux/amd64,linux/arm64 \
     --build-arg KUBECTL_SHELL_VERSION=$$KUBECTL_SHELL_VERSION \
-    --tag widemos/kubectl-shell:$$TAG \
-    --tag widemos/kubectl-shell:latest \
+    --tag $$IMAGE:$$TAG \
+    --tag $$IMAGE:latest \
     .
 
 push:
-	@docker push widemos/kubectl-shell:$$TAG
-	@docker push widemos/kubectl-shell:latest
+	@docker push $$IMAGE:$$TAG
+	@docker push $$IMAGE:latest
 
 settings:
-	@./update-settings $$URL "$(file <.token)" "widemos/kubectl-shell:$$TAG"
+	@./update-settings $$URL "$(file <.token)" "$$IMAGE:$$TAG"

@@ -1,3 +1,4 @@
 KUBECTL_SHELL_VERSION=2.39.0
+IMAGE=example/kubectl-shell
 TAG=2026022801
 URL=kubernetes.example.org
