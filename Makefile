@@ -13,6 +13,7 @@ help: _header
 	@echo ----------------------
 	@echo build
 	@echo push
+	@echo settings
 	@echo ----------------------
 
 _header:
@@ -32,3 +33,6 @@ build:
 push:
 	@docker push widemos/kubectl-shell:$$TAG
 	@docker push widemos/kubectl-shell:latest
+
+settings:
+	@./update-settings $$URL "$(file <.token)" "widemos/kubectl-shell:$$TAG"

@@ -1,2 +1,3 @@
 KUBECTL_SHELL_VERSION=2.39.0
 TAG=2026022801
+URL=kubernetes.example.org

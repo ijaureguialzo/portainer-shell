@@ -1,0 +1,9 @@
+#!/bin/bash
+
+curl --request PUT \
+    --url "https://$1/api/settings" \
+    --header "Content-Type: application/json" \
+    --header "X-API-Key: $2" \
+    --data "{
+        \"KubectlShellImage\": \"$3\"
+    }"
