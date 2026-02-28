@@ -4,9 +4,19 @@
 # Posted by fxnn
 # Retrieved 2026-02-27, License - CC BY-SA 4.0
 
+# Check default namespace first
+if /usr/local/bin/kubectl get -n default pods -o name >/dev/null 2>/dev/null; then
+    echo "default"
+    exit 0
+fi
+
 for namespaceWithType in $(/usr/local/bin/kubectl get ns -o name); do
     namespace="${namespaceWithType#*/}" # remove `namespace/` prefix
+    if [ "${namespace}" = "default" ]; then
+        continue # already checked above
+    fi
     if /usr/local/bin/kubectl get -n "${namespace}" pods -o name >/dev/null 2>/dev/null; then
         echo "${namespace}"
+        exit 0
     fi
 done
