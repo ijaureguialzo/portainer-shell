@@ -1,9 +1,20 @@
 #!/bin/bash
 
-curl --request PUT \
+response=$(curl --silent --write-out "\n%{http_code}" \
+    --request PUT \
     --url "https://$1/api/settings" \
     --header "Content-Type: application/json" \
     --header "X-API-Key: $2" \
     --data "{
         \"KubectlShellImage\": \"$3\"
-    }"
+    }")
+
+http_code="${response##*$'\n'}"
+body="${response%$'\n'*}"
+
+if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
+    echo "Imagen actualizada correctamente a '$3'."
+else
+    echo "Error al actualizar la imagen (HTTP ${http_code}): ${body}"
+    exit 1
+fi
