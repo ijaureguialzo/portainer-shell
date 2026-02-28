@@ -1,5 +1,12 @@
 #!make
 
+ifneq (,$(wildcard ./.env))
+    include .env
+    export
+else
+$(error No se encuentra el fichero .env)
+endif
+
 help: _header
 	${info}
 	@echo Opciones:
@@ -14,7 +21,14 @@ _header:
 	@echo -----------------------
 
 build:
-	@docker buildx build --no-cache --platform linux/amd64,linux/arm64 --tag widemos/kubectl-shell .
+	@docker buildx build \
+    --no-cache \
+    --platform linux/amd64,linux/arm64 \
+    --build-arg KUBECTL_SHELL_VERSION=$$KUBECTL_SHELL_VERSION \
+    --tag widemos/kubectl-shell:$$TAG \
+    --tag widemos/kubectl-shell:latest \
+    .
 
 push:
-	@docker push widemos/kubectl-shell
+	@docker push widemos/kubectl-shell:$$TAG
+	@docker push widemos/kubectl-shell:latest

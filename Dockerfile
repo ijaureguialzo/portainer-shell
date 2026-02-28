@@ -1,4 +1,6 @@
-FROM portainer/kubectl-shell:latest
+ARG KUBECTL_SHELL_VERSION=latest
+
+FROM portainer/kubectl-shell:${KUBECTL_SHELL_VERSION}
 
 COPY --chmod=755 first-namespace /usr/local/bin
 
