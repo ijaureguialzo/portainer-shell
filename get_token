@@ -1,0 +1,97 @@
+#!/bin/bash
+
+TOKEN_FILE=".token"
+
+check_token() {
+    local token="$1"
+    local http_code
+    http_code=$(curl --silent --write-out "%{http_code}" --output /dev/null \
+        --request GET \
+        --url "https://${PORTAINER_HOST}/api/users" \
+        --header "X-API-Key: ${token}")
+    [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]
+}
+
+get_new_token() {
+    echo "Token inválido o no encontrado. Introduce las credenciales de Portainer."
+    read -r -p "Usuario: " username
+    read -r -s -p "Contraseña: " password
+    echo
+
+    # Autenticarse para obtener un JWT
+    local auth_response
+    auth_response=$(curl --silent --write-out "\n%{http_code}" \
+        --request POST \
+        --url "https://${PORTAINER_HOST}/api/auth" \
+        --header "Content-Type: application/json" \
+        --data "$(jq --null-input --arg u "${username}" --arg p "${password}" \
+            '{Username: $u, Password: $p}')")
+
+    local auth_code="${auth_response##*$'\n'}"
+    local auth_body="${auth_response%$'\n'*}"
+
+    if [ "${auth_code}" -lt 200 ] || [ "${auth_code}" -ge 300 ]; then
+        echo "Error al autenticarse (HTTP ${auth_code}): ${auth_body}"
+        exit 1
+    fi
+
+    local jwt
+    jwt=$(echo "${auth_body}" | grep -o '"jwt":"[^"]*"' | cut -d'"' -f4)
+    if [ -z "${jwt}" ]; then
+        echo "Error: no se pudo extraer el JWT de la respuesta."
+        exit 1
+    fi
+
+    # Obtener el ID del usuario desde el payload del JWT (segunda parte, base64)
+    local payload
+    payload=$(echo "${jwt}" | cut -d'.' -f2 | tr '_-' '/+')
+    # Añadir padding si es necesario
+    local padded="${payload}==="
+    local user_id
+    user_id=$(echo "${padded}" | base64 --decode 2>/dev/null | grep -o '"id":[0-9]*' | cut -d':' -f2)
+    if [ -z "${user_id}" ]; then
+        echo "Error: no se pudo extraer el ID de usuario del JWT."
+        exit 1
+    fi
+
+    # Crear una API key usando el JWT
+    local token_response
+    token_response=$(curl --silent --write-out "\n%{http_code}" \
+        --request POST \
+        --url "https://${PORTAINER_HOST}/api/users/${user_id}/tokens" \
+        --header "Content-Type: application/json" \
+        --header "Authorization: Bearer ${jwt}" \
+        --data "$(jq --null-input --arg p "${password}" \
+            '{description: "portainer-shell", password: $p}')")
+
+    local token_code="${token_response##*$'\n'}"
+    local token_body="${token_response%$'\n'*}"
+
+    if [ "${token_code}" -ge 200 ] && [ "${token_code}" -lt 300 ]; then
+        local api_key
+        api_key=$(echo "${token_body}" | grep -o '"rawAPIKey":"[^"]*"' | cut -d'"' -f4 | tr -d '\r')
+        if [ -z "${api_key}" ]; then
+            echo "Error: no se pudo extraer la API key de la respuesta."
+            exit 1
+        fi
+        printf '%s\n' "${api_key}" > "${TOKEN_FILE}"
+        echo "Token guardado en ${TOKEN_FILE}."
+    else
+        echo "Error al crear la API key (HTTP ${token_code}): ${token_body}"
+        exit 1
+    fi
+}
+
+if [ -z "${PORTAINER_HOST}" ]; then
+    echo "Error: la variable PORTAINER_HOST no está definida."
+    exit 1
+fi
+
+if [ -f "${TOKEN_FILE}" ]; then
+    token=$(cat "${TOKEN_FILE}")
+    if check_token "${token}"; then
+        exit 0
+    fi
+fi
+
+get_new_token
