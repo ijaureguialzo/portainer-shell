@@ -35,4 +35,4 @@ push:
 	@docker push $$IMAGE:latest
 
 settings:
-	@./update-settings $$URL "$(file <.token)" "$$IMAGE:$$TAG"
+	@./update-settings $$PORTAINER_HOST "$(file <.token)" "$$IMAGE:$$TAG"
